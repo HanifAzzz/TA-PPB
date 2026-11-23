@@ -46,10 +46,12 @@ const databaseUrl = process.env.DATABASE_URL?.trim();
 
 if (databaseUrl && (databaseUrl.startsWith('postgres://') || databaseUrl.startsWith('postgresql://'))) {
   try {
+    // Strip sslmode query param to prevent pg from overriding rejectUnauthorized: false
+    const cleanUrl = databaseUrl.replace(/[?&]sslmode=[^&]+/g, '');
     pool = new Pool({
-      connectionString: databaseUrl,
+      connectionString: cleanUrl,
       ssl: { rejectUnauthorized: false },
-      connectionTimeoutMillis: 10000,
+      connectionTimeoutMillis: 15000,
     });
     pool.on('error', (err) => {
       console.error('❌ PostgreSQL Pool error:', err.message);
