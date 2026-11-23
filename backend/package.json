@@ -1,0 +1,27 @@
+{
+  "name": "haniforge-backend",
+  "version": "1.0.0",
+  "description": "Backend REST API for Haniforge PC Builder & Compatibility Checker",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "db:init": "node database/initDb.js",
+    "db:seed": "node seed/seed.js"
+  },
+  "keywords": [
+    "pc-builder",
+    "compatibility",
+    "express",
+    "postgresql",
+    "neon"
+  ],
+  "author": "Haniforge Team",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "pg": "^8.13.1"
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "name": "Haniforge",
+  "short_name": "Haniforge",
+  "description": "Simulasi Perakitan PC dan Analisis Kompatibilitas Komponen Berdasarkan Anggaran",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0B0F17",
+  "theme_color": "#38BDF8",
+  "scope": "/",
+  "lang": "id",
+  "categories": ["utilities", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "PC Builder",
+      "short_name": "Builder",
+      "description": "Langsung ke halaman perakitan PC",
+      "url": "/builder",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Komponen",
+      "short_name": "Komponen",
+      "description": "Lihat katalog komponen",
+      "url": "/components",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
