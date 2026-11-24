@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { componentsApi } from '../services/api';
-import { CATEGORIES } from '../utils/helpers';
+import { CATEGORIES, formatDots } from '../utils/helpers';
 import { useBuilder } from '../hooks/useBuilder';
 import { useToast } from '../hooks/useToast';
 import ComponentCard from '../components/ComponentCard';
@@ -119,9 +119,13 @@ export default function ComponentsPage() {
           <div className="flex-1 min-w-36">
             <label className="text-forge-muted text-xs mb-1.5 block">Harga Minimum (Rp)</label>
             <input
-              type="number"
-              value={minPrice}
-              onChange={e => setMinPrice(e.target.value)}
+              type="text"
+              inputMode="numeric"
+              value={formatDots(minPrice)}
+              onChange={e => {
+                const raw = e.target.value.replace(/\D/g, '');
+                setMinPrice(raw);
+              }}
               placeholder="0"
               className="w-full px-3 py-2 rounded-lg bg-forge-elevated border border-forge-border text-forge-text text-sm focus:outline-none focus:border-forge-accent/60"
             />
@@ -129,9 +133,13 @@ export default function ComponentsPage() {
           <div className="flex-1 min-w-36">
             <label className="text-forge-muted text-xs mb-1.5 block">Harga Maksimum (Rp)</label>
             <input
-              type="number"
-              value={maxPrice}
-              onChange={e => setMaxPrice(e.target.value)}
+              type="text"
+              inputMode="numeric"
+              value={formatDots(maxPrice)}
+              onChange={e => {
+                const raw = e.target.value.replace(/\D/g, '');
+                setMaxPrice(raw);
+              }}
               placeholder="Tanpa batas"
               className="w-full px-3 py-2 rounded-lg bg-forge-elevated border border-forge-border text-forge-text text-sm focus:outline-none focus:border-forge-accent/60"
             />

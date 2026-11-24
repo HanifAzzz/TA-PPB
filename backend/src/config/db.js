@@ -41,8 +41,9 @@ function seedMemoryStore() {
   console.log(`✅ Memory Store: ${memoryStore.components.length} komponen dimuat.`);
 }
 
-// Initialize PostgreSQL Pool if DATABASE_URL is set
-const databaseUrl = process.env.DATABASE_URL?.trim();
+// Initialize PostgreSQL Pool if DATABASE_URL is set (defaulting to Supabase TA-PPB)
+const defaultDbUrl = 'postgresql://postgres:hanifarifandi@db.uijqrcanmplthqonzogn.supabase.co:5432/postgres';
+const databaseUrl = (process.env.DATABASE_URL || defaultDbUrl).trim();
 
 if (databaseUrl && (databaseUrl.startsWith('postgres://') || databaseUrl.startsWith('postgresql://'))) {
   try {

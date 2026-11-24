@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useBuilder } from '../hooks/useBuilder';
 import { useToast } from '../hooks/useToast';
 import { compatibilityApi, buildsApi } from '../services/api';
-import { formatRupiah, CATEGORIES, getCategoryInfo } from '../utils/helpers';
+import { formatRupiah, formatDots, CATEGORIES, getCategoryInfo } from '../utils/helpers';
 import CategoryIcon from '../components/CategoryIcon';
 import { LoadingSpinner } from '../components/LoadingState';
 import {
@@ -176,10 +176,14 @@ export default function BuilderPage() {
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-forge-muted text-sm font-semibold">Rp</span>
               <input
-                type="number"
-                value={budget || ''}
-                onChange={e => updateBudget(Number(e.target.value) || 0)}
-                placeholder="Masukkan anggaran..."
+                type="text"
+                inputMode="numeric"
+                value={formatDots(budget)}
+                onChange={e => {
+                  const raw = e.target.value.replace(/\D/g, '');
+                  updateBudget(raw ? parseInt(raw, 10) : 0);
+                }}
+                placeholder="10.000.000"
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-forge-elevated border border-forge-border text-forge-text text-sm focus:outline-none focus:border-forge-accent/60 transition-colors"
               />
             </div>

@@ -9,6 +9,14 @@ export function formatRupiah(amount) {
   }).format(Number(amount));
 }
 
+// Format integer with thousand separator dots (e.g. 1000 -> "1.000", 1000000 -> "1.000.000")
+export function formatDots(amount) {
+  if (!amount && amount !== 0) return '';
+  const num = Number(String(amount).replace(/\D/g, ''));
+  if (isNaN(num) || num === 0) return '';
+  return num.toLocaleString('id-ID');
+}
+
 // Category display info
 export const CATEGORIES = [
   { key: 'cpu',         label: 'Processor (CPU)',     icon: 'Cpu',         color: 'text-blue-400' },
