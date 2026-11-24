@@ -74,6 +74,27 @@ app.use((req, res) => {
   });
 });
 
+// Database initialization tracker
+let dbInitPromise = null;
+function ensureDbInit() {
+  if (!dbInitPromise) {
+    dbInitPromise = initDb().catch((err) => {
+      console.warn('⚠️ InitDb background error:', err.message);
+    });
+  }
+  return dbInitPromise;
+}
+
+// Middleware to ensure DB connection is attempted before routes run
+app.use(async (req, res, next) => {
+  try {
+    await ensureDbInit();
+  } catch (e) {
+    // Graceful fallback already handled inside initDb
+  }
+  next();
+});
+
 // Error handler middleware
 const errorHandler = require('./middleware/errorHandler');
 app.use(errorHandler);
@@ -83,7 +104,7 @@ app.use(errorHandler);
 // ==========================================
 async function startServer() {
   try {
-    await initDb();
+    await ensureDbInit();
     app.listen(PORT, () => {
       console.log('');
       console.log('🛠️  ============================================');
@@ -100,14 +121,14 @@ async function startServer() {
     });
   } catch (err) {
     console.error('❌ Gagal menjalankan server:', err.message);
-    process.exit(1);
   }
 }
 
-if (!process.env.VERCEL) {
+// Start server if run directly (node src/server.js or npm start in Vercel Service)
+if (require.main === module || !process.env.VERCEL) {
   startServer();
 } else {
-  initDb();
+  ensureDbInit();
 }
 
 module.exports = app;

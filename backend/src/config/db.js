@@ -51,7 +51,8 @@ if (databaseUrl && (databaseUrl.startsWith('postgres://') || databaseUrl.startsW
     pool = new Pool({
       connectionString: cleanUrl,
       ssl: { rejectUnauthorized: false },
-      connectionTimeoutMillis: 15000,
+      connectionTimeoutMillis: 5000,
+      idleTimeoutMillis: 10000,
     });
     pool.on('error', (err) => {
       console.error('❌ PostgreSQL Pool error:', err.message);
@@ -67,20 +68,33 @@ async function initDb() {
   if (pool) {
     try {
       const client = await pool.connect();
-      console.log('✅ Berhasil terhubung ke Neon PostgreSQL Database!');
+      console.log('✅ Berhasil terhubung ke PostgreSQL Database!');
       isConnectedToPostgres = true;
 
-      // Run schema
-      const schemaPath = path.join(__dirname, '../../database/schema.sql');
-      if (fs.existsSync(schemaPath)) {
-        const schemaSql = fs.readFileSync(schemaPath, 'utf8');
-        await client.query(schemaSql);
-        console.log('✅ Skema database berhasil diverifikasi/dibuat.');
-      }
+      // Ensure builds & build_items tables exist (safe and idempotent)
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS builds (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          budget BIGINT NOT NULL DEFAULT 0,
+          total_price BIGINT NOT NULL DEFAULT 0,
+          compatibility_status VARCHAR(50) DEFAULT 'compatible',
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS build_items (
+          id SERIAL PRIMARY KEY,
+          build_id INTEGER REFERENCES builds(id) ON DELETE CASCADE,
+          component_id INTEGER REFERENCES components(id) ON DELETE CASCADE,
+          category VARCHAR(50) NOT NULL,
+          price_at_selection BIGINT NOT NULL DEFAULT 0,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
 
-      // Auto-seed if empty
+      // Auto-seed components if empty
       const countRes = await client.query('SELECT COUNT(*) as count FROM components');
-      const count = parseInt(countRes.rows[0].count, 10);
+      const count = parseInt(countRes.rows[0]?.count || 0, 10);
       if (count === 0) {
         console.log('🌱 Database kosong, menjalankan seed data awal...');
         for (const item of componentsData) {
@@ -98,7 +112,7 @@ async function initDb() {
       client.release();
       return true;
     } catch (err) {
-      console.warn('⚠️ Gagal terhubung ke Neon PostgreSQL:', err.message);
+      console.warn('⚠️ Gagal terhubung ke PostgreSQL:', err.message);
       console.warn('👉 Menggunakan Embedded Memory Store.');
       isConnectedToPostgres = false;
       seedMemoryStore();
