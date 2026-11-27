@@ -1,48 +1,26 @@
-const { query, getIsPostgres, memoryStore } = require('../config/db');
+const { query } = require('../config/db');
 
 // GET /api/dashboard/stats
 async function getStats(req, res, next) {
   try {
-    let totalComponents, totalBuilds, categoryCounts, featuredComponents, recentBuilds;
+    const compCountRes = await query('SELECT COUNT(*) as count FROM components');
+    const totalComponents = parseInt(compCountRes.rows[0]?.count || '0', 10);
 
-    if (getIsPostgres()) {
-      // PostgreSQL queries
-      const compCountRes = await query('SELECT COUNT(*) as count FROM components');
-      totalComponents = parseInt(compCountRes.rows[0]?.count || '0', 10);
+    const buildCountRes = await query('SELECT COUNT(*) as count FROM builds');
+    const totalBuilds = parseInt(buildCountRes.rows[0]?.count || '0', 10);
 
-      const buildCountRes = await query('SELECT COUNT(*) as count FROM builds');
-      totalBuilds = parseInt(buildCountRes.rows[0]?.count || '0', 10);
+    const catRes = await query('SELECT category, COUNT(*) as count FROM components GROUP BY category');
+    const categoryCounts = {};
+    catRes.rows.forEach(r => { categoryCounts[r.category] = parseInt(r.count, 10); });
 
-      const catRes = await query('SELECT category, COUNT(*) as count FROM components GROUP BY category');
-      categoryCounts = {};
-      catRes.rows.forEach(r => { categoryCounts[r.category] = parseInt(r.count, 10); });
+    const featuredRes = await query('SELECT * FROM components ORDER BY price DESC LIMIT 8');
+    const featuredComponents = featuredRes.rows.map(c => ({
+      ...c,
+      specifications: typeof c.specifications === 'string' ? JSON.parse(c.specifications) : c.specifications,
+    }));
 
-      const featuredRes = await query('SELECT * FROM components ORDER BY price DESC LIMIT 8');
-      featuredComponents = featuredRes.rows.map(c => ({
-        ...c,
-        specifications: typeof c.specifications === 'string' ? JSON.parse(c.specifications) : c.specifications,
-      }));
-
-      const recentRes = await query('SELECT * FROM builds ORDER BY created_at DESC LIMIT 4');
-      recentBuilds = recentRes.rows;
-    } else {
-      // Memory store
-      totalComponents = memoryStore.components.length;
-      totalBuilds = memoryStore.builds.length;
-
-      categoryCounts = {};
-      memoryStore.components.forEach(c => {
-        categoryCounts[c.category] = (categoryCounts[c.category] || 0) + 1;
-      });
-
-      featuredComponents = [...memoryStore.components]
-        .sort((a, b) => b.price - a.price)
-        .slice(0, 8);
-
-      recentBuilds = [...memoryStore.builds]
-        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-        .slice(0, 4);
-    }
+    const recentRes = await query('SELECT * FROM builds ORDER BY created_at DESC LIMIT 4');
+    const recentBuilds = recentRes.rows;
 
     return res.json({
       success: true,

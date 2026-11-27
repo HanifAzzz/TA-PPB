@@ -1,4 +1,4 @@
-const { query, getIsPostgres, memoryStore } = require('../config/db');
+const { query } = require('../config/db');
 const { checkCompatibility } = require('../services/compatibilityService');
 
 function parseSpecs(item) {
@@ -15,10 +15,6 @@ function parseSpecs(item) {
 // =========================================================
 async function getAllBuilds(req, res, next) {
   try {
-    if (!getIsPostgres()) {
-      return res.json({ success: true, count: 0, data: [], is_database_connected: false });
-    }
-
     const buildsRes = await query('SELECT * FROM builds ORDER BY created_at DESC');
     const builds = await Promise.all(
       buildsRes.rows.map(async (b) => {
@@ -33,7 +29,7 @@ async function getAllBuilds(req, res, next) {
       })
     );
 
-    return res.json({ success: true, count: builds.length, data: builds, is_database_connected: true });
+    return res.json({ success: true, count: builds.length, data: builds });
   } catch (error) {
     next(error);
   }
@@ -45,10 +41,6 @@ async function getAllBuilds(req, res, next) {
 async function getBuildById(req, res, next) {
   try {
     const { id } = req.params;
-
-    if (!getIsPostgres()) {
-      return res.status(503).json({ success: false, message: 'Database PostgreSQL belum terhubung.' });
-    }
 
     const buildRes = await query('SELECT * FROM builds WHERE id = $1', [id]);
     if (buildRes.rows.length === 0) {
@@ -104,13 +96,6 @@ async function createBuild(req, res, next) {
       return res.status(400).json({ success: false, message: 'Minimal pilih satu komponen untuk menyimpan rakitan.' });
     }
 
-    if (!getIsPostgres()) {
-      return res.status(503).json({
-        success: false,
-        message: 'Koneksi ke Database PostgreSQL Supabase belum terhubung. Rakitan hanya dapat disimpan ke database permanen.',
-      });
-    }
-
     const buildRes = await query(
       `INSERT INTO builds (name, budget, total_price, compatibility_status) VALUES ($1, $2, $3, $4) RETURNING *`,
       [name.trim(), Number(budget || 0), Number(total_price || 0), compatibility_status || 'compatible']
@@ -128,7 +113,7 @@ async function createBuild(req, res, next) {
 
     return res.status(201).json({
       success: true,
-      message: 'Rakitan PC berhasil disimpan ke database PostgreSQL Supabase.',
+      message: 'Rakitan PC berhasil disimpan.',
       data: { ...newBuild, items: insertedItems },
     });
   } catch (error) {
@@ -143,10 +128,6 @@ async function updateBuild(req, res, next) {
   try {
     const { id } = req.params;
     const { name, budget, total_price, compatibility_status, items } = req.body;
-
-    if (!getIsPostgres()) {
-      return res.status(503).json({ success: false, message: 'Database PostgreSQL belum terhubung.' });
-    }
 
     const checkRes = await query('SELECT * FROM builds WHERE id = $1', [id]);
     if (checkRes.rows.length === 0) {
@@ -167,7 +148,7 @@ async function updateBuild(req, res, next) {
         );
       }
     }
-    return res.json({ success: true, message: 'Rakitan berhasil diperbarui di database.', data: updateRes.rows[0] });
+    return res.json({ success: true, message: 'Rakitan berhasil diperbarui.', data: updateRes.rows[0] });
   } catch (error) {
     next(error);
   }
@@ -179,16 +160,11 @@ async function updateBuild(req, res, next) {
 async function deleteBuild(req, res, next) {
   try {
     const { id } = req.params;
-
-    if (!getIsPostgres()) {
-      return res.status(503).json({ success: false, message: 'Database PostgreSQL belum terhubung.' });
-    }
-
     const result = await query('DELETE FROM builds WHERE id = $1 RETURNING *', [id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: `Rakitan ID ${id} tidak ditemukan.` });
     }
-    return res.json({ success: true, message: 'Rakitan berhasil dihapus dari database.', data: result.rows[0] });
+    return res.json({ success: true, message: 'Rakitan berhasil dihapus.', data: result.rows[0] });
   } catch (error) {
     next(error);
   }
