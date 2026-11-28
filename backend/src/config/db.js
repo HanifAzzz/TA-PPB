@@ -10,8 +10,9 @@ let isConnectedToPostgres = false;
 // POSTGRESQL CONNECTION — FULL DATABASE, NO DUMMY/MEMORY
 // =========================================================
 
-// Default to Supabase TA-PPB direct connection (IPv6, works on Vercel)
-const defaultDbUrl = 'postgresql://postgres:hanifarifandi@db.uijqrcanmplthqonzogn.supabase.co:5432/postgres';
+// Supabase Transaction Pooler (IPv4-compatible, works on Vercel/AWS Lambda)
+// Port 6543 = Transaction Pooler (Supavisor)
+const defaultDbUrl = 'postgresql://postgres.uijqrcanmplthqonzogn:hanifarifandi@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres';
 const databaseUrl = (process.env.DATABASE_URL || defaultDbUrl).trim();
 
 if (databaseUrl && (databaseUrl.startsWith('postgres://') || databaseUrl.startsWith('postgresql://'))) {
