@@ -12,7 +12,13 @@ const api = axios.create({
 
 // Request interceptor
 api.interceptors.request.use(
-  (config) => config,
+  (config) => {
+    const token = localStorage.getItem('haniforge_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
   (error) => Promise.reject(error)
 );
 
@@ -27,6 +33,13 @@ api.interceptors.response.use(
     return Promise.reject(new Error(message));
   }
 );
+
+// === AUTH API ===
+export const authApi = {
+  login: (data) => api.post('/api/auth/login', data),
+  register: (data) => api.post('/api/auth/register', data),
+  getMe: () => api.get('/api/auth/me'),
+};
 
 // === COMPONENTS API ===
 export const componentsApi = {

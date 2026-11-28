@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import Logo from '../components/Logo';
-import { Cpu, Server, ShieldCheck, Wallet, Wrench, Code, Database, Globe, Smartphone, CheckCircle, Download, Wifi } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
+import { useToast } from '../hooks/useToast';
+import { Cpu, Server, ShieldCheck, Wallet, Wrench, Code, Database, Globe, Smartphone, CheckCircle, Download, Wifi, User, LogIn, LogOut } from 'lucide-react';
 
 const APP_INFO = {
   name: 'Haniforge',
@@ -24,6 +27,9 @@ const APP_INFO = {
 };
 
 export default function ProfilePage() {
+  const { user, isAuthenticated, logout } = useAuth();
+  const { success } = useToast();
+  const navigate = useNavigate();
   const [swStatus, setSwStatus] = useState('Memeriksa...');
   const [isStandalone, setIsStandalone] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -79,6 +85,64 @@ export default function ProfilePage() {
 
   return (
     <div className="px-4 lg:px-10 pt-6 pb-12 max-w-2xl mx-auto">
+      {/* User Account Status */}
+      <div className="bg-forge-surface border border-forge-border rounded-2xl p-5 mb-6 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-forge-text font-semibold text-sm flex items-center gap-2">
+            <User size={16} className="text-forge-accent" />
+            Akun Pengguna
+          </h3>
+          {isAuthenticated ? (
+            <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-green-500/15 text-green-400 border border-green-500/30 font-medium">
+              ● Terhubung ke Database
+            </span>
+          ) : (
+            <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-yellow-500/15 text-yellow-400 border border-yellow-500/30 font-medium">
+              Mode Tamu
+            </span>
+          )}
+        </div>
+
+        {isAuthenticated && user ? (
+          <div className="flex flex-col sm:flex-row items-center gap-4 bg-forge-elevated p-4 rounded-xl border border-forge-border/60">
+            <img
+              src={user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=0B0F17&color=38BDF8`}
+              alt={user.name}
+              className="w-14 h-14 rounded-full object-cover border border-forge-accent/40 shadow-sm"
+            />
+            <div className="flex-1 text-center sm:text-left">
+              <h4 className="text-base font-bold text-forge-text">{user.name}</h4>
+              <p className="text-forge-muted text-xs">{user.email}</p>
+              <p className="text-forge-accent text-[11px] font-medium mt-0.5">Role: {user.role || 'User'}</p>
+            </div>
+            <button
+              onClick={() => {
+                logout();
+                success('Berhasil keluar dari akun.');
+              }}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/10 text-xs font-semibold transition-all cursor-pointer"
+            >
+              <LogOut size={14} />
+              <span>Keluar</span>
+            </button>
+          </div>
+        ) : (
+          <div className="bg-forge-elevated p-4 rounded-xl border border-forge-border/60 text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div>
+              <p className="text-forge-text text-sm font-semibold">Anda belum masuk</p>
+              <p className="text-forge-muted text-xs mt-0.5">Masuk atau buat akun untuk menyimpan rakitan PC ke database.</p>
+            </div>
+            <Link
+              to="/login"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-forge-accent text-forge-bg font-bold text-xs hover:bg-forge-accent/90 transition-all shadow-sm flex-shrink-0"
+            >
+              <LogIn size={14} />
+              <span>Masuk / Daftar</span>
+            </Link>
+          </div>
+        )}
+      </div>
+
       {/* App Identity */}
       <div className="bg-forge-surface border border-forge-border rounded-2xl p-8 mb-6 text-center">
         <div className="flex justify-center mb-4">

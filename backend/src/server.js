@@ -54,11 +54,13 @@ app.use(async (req, res, next) => {
 // ==========================================
 // ROUTES
 // ==========================================
+const authRoutes = require('./routes/authRoutes');
 const componentRoutes = require('./routes/componentRoutes');
 const buildRoutes = require('./routes/buildRoutes');
 const compatibilityRoutes = require('./routes/compatibilityRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 
+app.use('/api/auth', authRoutes);
 app.use('/api/components', componentRoutes);
 app.use('/api/builds', buildRoutes);
 app.use('/api/compatibility', compatibilityRoutes);

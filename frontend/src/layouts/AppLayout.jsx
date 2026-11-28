@@ -2,8 +2,9 @@ import Logo from '../components/Logo';
 import BottomNav from '../components/BottomNav';
 import OfflineBanner from '../components/OfflineBanner';
 import InstallPwaPrompt from '../components/InstallPwaPrompt';
+import { useAuth } from '../hooks/useAuth';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Layers, Wrench, Server, User, Sparkles } from 'lucide-react';
+import { Home, Layers, Wrench, Server, User, Sparkles, LogIn } from 'lucide-react';
 
 const sidebarItems = [
   { to: '/',           label: 'Home',       icon: Home },
@@ -15,6 +16,7 @@ const sidebarItems = [
 
 export default function AppLayout({ children }) {
   const location = useLocation();
+  const { user, isAuthenticated } = useAuth();
 
   return (
     <div className="min-h-screen bg-forge-bg text-forge-text flex flex-col">
@@ -24,7 +26,27 @@ export default function AppLayout({ children }) {
       {/* Mobile Top Header */}
       <header className="lg:hidden sticky top-0 z-30 bg-forge-surface/90 backdrop-blur-md border-b border-forge-border px-4 py-3 flex items-center justify-between">
         <Logo size="sm" />
-        <InstallPwaPrompt />
+        <div className="flex items-center gap-2">
+          {isAuthenticated && user ? (
+            <Link to="/profile" className="flex items-center gap-2 p-1 pl-2 pr-2.5 rounded-full bg-forge-elevated border border-forge-border">
+              <img
+                src={user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=0B0F17&color=38BDF8`}
+                alt={user.name}
+                className="w-6 h-6 rounded-full object-cover"
+              />
+              <span className="text-xs font-semibold text-forge-text max-w-20 truncate">{user.name.split(' ')[0]}</span>
+            </Link>
+          ) : (
+            <Link
+              to="/login"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-forge-accent/15 border border-forge-accent/40 text-forge-accent text-xs font-semibold hover:bg-forge-accent/25 transition-all"
+            >
+              <LogIn size={13} />
+              <span>Masuk</span>
+            </Link>
+          )}
+          <InstallPwaPrompt />
+        </div>
       </header>
 
       <div className="flex flex-1">
@@ -56,6 +78,30 @@ export default function AppLayout({ children }) {
           </nav>
 
           <div className="p-4 border-t border-forge-border flex flex-col gap-3">
+            {isAuthenticated && user ? (
+              <Link
+                to="/profile"
+                className="flex items-center gap-3 p-2.5 rounded-xl bg-forge-elevated border border-forge-border/80 hover:border-forge-accent/40 transition-all"
+              >
+                <img
+                  src={user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=0B0F17&color=38BDF8`}
+                  alt={user.name}
+                  className="w-9 h-9 rounded-full object-cover border border-forge-accent/30"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-forge-text truncate">{user.name}</p>
+                  <p className="text-[10px] text-forge-muted truncate">{user.email}</p>
+                </div>
+              </Link>
+            ) : (
+              <Link
+                to="/login"
+                className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-forge-accent/15 border border-forge-accent/40 text-forge-accent text-xs font-semibold hover:bg-forge-accent/25 transition-all"
+              >
+                <LogIn size={14} />
+                <span>Masuk / Daftar Akun</span>
+              </Link>
+            )}
             <InstallPwaPrompt />
             <div className="flex items-center justify-between text-[11px] text-forge-muted">
               <span>Haniforge v1.0.0</span>
