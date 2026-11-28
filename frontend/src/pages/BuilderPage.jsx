@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useBuilder } from '../hooks/useBuilder';
+import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
 import { compatibilityApi, buildsApi } from '../services/api';
 import { formatRupiah, formatDots, CATEGORIES, getCategoryInfo } from '../utils/helpers';
@@ -8,11 +9,13 @@ import CategoryIcon from '../components/CategoryIcon';
 import { LoadingSpinner } from '../components/LoadingState';
 import {
   Wrench, Trash2, Plus, ArrowRight, ShieldCheck, AlertTriangle, XCircle,
-  Save, RotateCcw, Package, Wallet, TrendingDown, TrendingUp
+  Save, RotateCcw, Package, Wallet, TrendingDown, TrendingUp,
+  Lock, LogIn, UserPlus
 } from 'lucide-react';
 
 export default function BuilderPage() {
   const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
   const {
     selectedComponents, budget, totalPrice, remainingBudget,
     isOverBudget, percentageUsed, selectedCount,
@@ -27,6 +30,10 @@ export default function BuilderPage() {
   const [checkingCompat, setCheckingCompat] = useState(false);
 
   const handleSave = async () => {
+    if (!isAuthenticated) {
+      setShowSaveModal(true);
+      return;
+    }
     if (!saveName.trim()) {
       error('Nama rakitan tidak boleh kosong!');
       return;
@@ -324,33 +331,75 @@ export default function BuilderPage() {
       {showSaveModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowSaveModal(false)}>
           <div className="bg-forge-surface border border-forge-border rounded-2xl p-6 w-full max-w-sm shadow-xl" onClick={e => e.stopPropagation()}>
-            <h3 className="text-forge-text font-bold text-lg mb-4">Simpan Rakitan PC</h3>
-            <input
-              type="text"
-              value={saveName}
-              onChange={e => setSaveName(e.target.value)}
-              placeholder="Nama rakitan, misal: Gaming PC 2024"
-              className="w-full px-4 py-3 rounded-xl bg-forge-elevated border border-forge-border text-forge-text text-sm focus:outline-none focus:border-forge-accent/60 mb-4"
-              autoFocus
-              onKeyDown={e => e.key === 'Enter' && handleSave()}
-            />
-            <div className="text-forge-muted text-xs mb-5 space-y-1">
-              <p>Total harga: <span className="text-forge-text font-semibold">{formatRupiah(totalPrice)}</span></p>
-              {budget > 0 && <p>Anggaran: <span className="text-forge-text font-semibold">{formatRupiah(budget)}</span></p>}
-              <p>Komponen: <span className="text-forge-text font-semibold">{selectedCount} item</span></p>
-            </div>
-            <div className="flex gap-3">
-              <button onClick={() => setShowSaveModal(false)} className="flex-1 py-2.5 rounded-xl border border-forge-border text-forge-muted hover:text-forge-text text-sm transition-colors">
-                Batal
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={isSaving || !saveName.trim()}
-                className="flex-1 py-2.5 rounded-xl bg-forge-accent text-forge-bg font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-forge-accent/90 transition-all"
-              >
-                {isSaving ? 'Menyimpan...' : 'Simpan'}
-              </button>
-            </div>
+
+            {/* Auth Gate: not logged in */}
+            {!isAuthenticated ? (
+              <div className="text-center">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-forge-accent/20 to-forge-primary/20 border border-forge-accent/40 mx-auto flex items-center justify-center mb-4 shadow-glow-cyan">
+                  <Lock size={24} className="text-forge-accent" />
+                </div>
+                <h3 className="text-forge-text font-bold text-lg mb-2">Login Untuk Menyimpan</h3>
+                <p className="text-forge-muted text-sm leading-relaxed mb-5">
+                  Rakitan PC hanya dapat disimpan ke database akun Anda. Silakan masuk atau daftar terlebih dahulu.
+                </p>
+                <div className="flex flex-col gap-2.5 mb-4">
+                  <Link
+                    to="/login"
+                    state={{ from: '/builder' }}
+                    onClick={() => setShowSaveModal(false)}
+                    className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-forge-accent text-forge-bg font-bold text-sm hover:bg-forge-accent/90 transition-all shadow-glow-cyan"
+                  >
+                    <LogIn size={15} />
+                    Masuk ke Akun
+                  </Link>
+                  <Link
+                    to="/register"
+                    state={{ from: '/builder' }}
+                    onClick={() => setShowSaveModal(false)}
+                    className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-forge-border text-forge-text hover:bg-forge-elevated font-semibold text-sm transition-all"
+                  >
+                    <UserPlus size={15} />
+                    Daftar Akun Baru
+                  </Link>
+                </div>
+                <button onClick={() => setShowSaveModal(false)} className="text-xs text-forge-muted hover:text-forge-text transition-colors">
+                  Tutup
+                </button>
+              </div>
+            ) : (
+              /* Authenticated: show save form */
+              <>
+                <h3 className="text-forge-text font-bold text-lg mb-4">Simpan Rakitan PC</h3>
+                <input
+                  type="text"
+                  value={saveName}
+                  onChange={e => setSaveName(e.target.value)}
+                  placeholder="Nama rakitan, misal: Gaming PC 2024"
+                  className="w-full px-4 py-3 rounded-xl bg-forge-elevated border border-forge-border text-forge-text text-sm focus:outline-none focus:border-forge-accent/60 mb-4"
+                  autoFocus
+                  onKeyDown={e => e.key === 'Enter' && handleSave()}
+                />
+                <div className="text-forge-muted text-xs mb-5 space-y-1">
+                  <p>Total harga: <span className="text-forge-text font-semibold">{formatRupiah(totalPrice)}</span></p>
+                  {budget > 0 && <p>Anggaran: <span className="text-forge-text font-semibold">{formatRupiah(budget)}</span></p>}
+                  <p>Komponen: <span className="text-forge-text font-semibold">{selectedCount} item</span></p>
+                  <p className="text-forge-accent/80">Disimpan ke akun: <span className="font-semibold">{user?.name}</span></p>
+                </div>
+                <div className="flex gap-3">
+                  <button onClick={() => setShowSaveModal(false)} className="flex-1 py-2.5 rounded-xl border border-forge-border text-forge-muted hover:text-forge-text text-sm transition-colors">
+                    Batal
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    disabled={isSaving || !saveName.trim()}
+                    className="flex-1 py-2.5 rounded-xl bg-forge-accent text-forge-bg font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-forge-accent/90 transition-all"
+                  >
+                    {isSaving ? 'Menyimpan...' : 'Simpan'}
+                  </button>
+                </div>
+              </>
+            )}
+
           </div>
         </div>
       )}

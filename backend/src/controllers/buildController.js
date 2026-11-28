@@ -11,11 +11,16 @@ function parseSpecs(item) {
 }
 
 // =========================================================
-// GET /api/builds
+// GET /api/builds (Only for the authenticated user)
 // =========================================================
 async function getAllBuilds(req, res, next) {
   try {
-    const buildsRes = await query('SELECT * FROM builds ORDER BY created_at DESC');
+    const userId = req.userId;
+    const buildsRes = await query(
+      'SELECT * FROM builds WHERE user_id = $1 ORDER BY created_at DESC',
+      [userId]
+    );
+
     const builds = await Promise.all(
       buildsRes.rows.map(async (b) => {
         const itemsRes = await query(
@@ -36,15 +41,19 @@ async function getAllBuilds(req, res, next) {
 }
 
 // =========================================================
-// GET /api/builds/:id
+// GET /api/builds/:id (Only for the owner of the build)
 // =========================================================
 async function getBuildById(req, res, next) {
   try {
     const { id } = req.params;
+    const userId = req.userId;
 
-    const buildRes = await query('SELECT * FROM builds WHERE id = $1', [id]);
+    const buildRes = await query(
+      'SELECT * FROM builds WHERE id = $1 AND user_id = $2',
+      [id, userId]
+    );
     if (buildRes.rows.length === 0) {
-      return res.status(404).json({ success: false, message: `Rakitan ID ${id} tidak ditemukan.` });
+      return res.status(404).json({ success: false, message: `Rakitan ID ${id} tidak ditemukan atau Anda tidak memiliki akses.` });
     }
     const build = buildRes.rows[0];
 
@@ -83,11 +92,12 @@ async function getBuildById(req, res, next) {
 }
 
 // =========================================================
-// POST /api/builds
+// POST /api/builds (Saved under the authenticated user's ID)
 // =========================================================
 async function createBuild(req, res, next) {
   try {
     const { name, budget, total_price, compatibility_status, items } = req.body;
+    const userId = req.userId;
 
     if (!name || !name.trim()) {
       return res.status(400).json({ success: false, message: 'Nama rakitan PC wajib diisi.' });
@@ -97,15 +107,19 @@ async function createBuild(req, res, next) {
     }
 
     const buildRes = await query(
-      `INSERT INTO builds (name, budget, total_price, compatibility_status) VALUES ($1, $2, $3, $4) RETURNING *`,
-      [name.trim(), Number(budget || 0), Number(total_price || 0), compatibility_status || 'compatible']
+      `INSERT INTO builds (user_id, name, budget, total_price, compatibility_status)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [userId, name.trim(), Number(budget || 0), Number(total_price || 0), compatibility_status || 'compatible']
     );
     const newBuild = buildRes.rows[0];
 
     const insertedItems = [];
     for (const item of items) {
       const r = await query(
-        `INSERT INTO build_items (build_id, component_id, category, price_at_selection) VALUES ($1, $2, $3, $4) RETURNING *`,
+        `INSERT INTO build_items (build_id, component_id, category, price_at_selection)
+         VALUES ($1, $2, $3, $4)
+         RETURNING *`,
         [newBuild.id, Number(item.component_id), item.category, Number(item.price_at_selection || item.price || 0)]
       );
       insertedItems.push(r.rows[0]);
@@ -113,7 +127,7 @@ async function createBuild(req, res, next) {
 
     return res.status(201).json({
       success: true,
-      message: 'Rakitan PC berhasil disimpan.',
+      message: 'Rakitan PC berhasil disimpan ke akun Anda.',
       data: { ...newBuild, items: insertedItems },
     });
   } catch (error) {
@@ -127,16 +141,19 @@ async function createBuild(req, res, next) {
 async function updateBuild(req, res, next) {
   try {
     const { id } = req.params;
+    const userId = req.userId;
     const { name, budget, total_price, compatibility_status, items } = req.body;
 
-    const checkRes = await query('SELECT * FROM builds WHERE id = $1', [id]);
+    const checkRes = await query('SELECT * FROM builds WHERE id = $1 AND user_id = $2', [id, userId]);
     if (checkRes.rows.length === 0) {
       return res.status(404).json({ success: false, message: `Rakitan ID ${id} tidak ditemukan.` });
     }
 
     const updateRes = await query(
-      `UPDATE builds SET name=$1, budget=$2, total_price=$3, compatibility_status=$4, updated_at=CURRENT_TIMESTAMP WHERE id=$5 RETURNING *`,
-      [name.trim(), Number(budget || 0), Number(total_price || 0), compatibility_status || 'compatible', id]
+      `UPDATE builds SET name=$1, budget=$2, total_price=$3, compatibility_status=$4, updated_at=CURRENT_TIMESTAMP
+       WHERE id=$5 AND user_id=$6
+       RETURNING *`,
+      [name.trim(), Number(budget || 0), Number(total_price || 0), compatibility_status || 'compatible', id, userId]
     );
 
     if (items && Array.isArray(items)) {
@@ -160,9 +177,11 @@ async function updateBuild(req, res, next) {
 async function deleteBuild(req, res, next) {
   try {
     const { id } = req.params;
-    const result = await query('DELETE FROM builds WHERE id = $1 RETURNING *', [id]);
+    const userId = req.userId;
+
+    const result = await query('DELETE FROM builds WHERE id = $1 AND user_id = $2 RETURNING *', [id, userId]);
     if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: `Rakitan ID ${id} tidak ditemukan.` });
+      return res.status(404).json({ success: false, message: `Rakitan ID ${id} tidak ditemukan atau Anda tidak memiliki akses.` });
     }
     return res.json({ success: true, message: 'Rakitan berhasil dihapus.', data: result.rows[0] });
   } catch (error) {
