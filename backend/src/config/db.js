@@ -91,6 +91,11 @@ async function initDb() {
       );
     `);
 
+    // Migration: add user_id column to existing builds table (safe, idempotent)
+    await client.query(`
+      ALTER TABLE builds ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE SET NULL;
+    `);
+
     const countRes = await client.query('SELECT COUNT(*) as count FROM components');
     const count = parseInt(countRes.rows[0]?.count || 0, 10);
     console.log(`ℹ️ Database PostgreSQL siap dengan ${count} komponen.`);
@@ -105,11 +110,16 @@ async function initDb() {
 }
 
 // =========================================================
-// QUERY FUNCTION — PostgreSQL only
+// QUERY FUNCTION — waits for DB init if needed
 // =========================================================
 async function query(text, params = []) {
+  // If not yet connected, wait for init to complete (handles cold starts)
   if (!isConnectedToPostgres || !pool) {
-    throw new Error('Database PostgreSQL belum terhubung.');
+    // Try to initialize once more before failing
+    await initDb().catch(() => {});
+  }
+  if (!isConnectedToPostgres || !pool) {
+    throw new Error('Database PostgreSQL belum terhubung. Periksa koneksi Supabase.');
   }
   try {
     const res = await pool.query(text, params);
